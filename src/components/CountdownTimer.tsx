@@ -1,16 +1,19 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Play, Pause, RotateCcw } from "lucide-react";
+import { Play, Pause, RotateCcw, Timer as TimerIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
 
 const presets = [
   { label: "5m", seconds: 300 },
   { label: "10m", seconds: 600 },
-  { label: "15m", seconds: 900 },
   { label: "25m", seconds: 1500 },
+  { label: "1h", seconds: 3600 },
 ];
 
 const CountdownTimer = () => {
-  const [totalSeconds, setTotalSeconds] = useState(300);
-  const [remaining, setRemaining] = useState(300);
+  const [totalSeconds, setTotalSeconds] = useState(1500);
+  const [remaining, setRemaining] = useState(1500);
   const [running, setRunning] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -45,76 +48,92 @@ const CountdownTimer = () => {
   };
 
   const format = useCallback((s: number) => {
-    const mins = Math.floor(s / 60);
+    const hrs = Math.floor(s / 3600);
+    const mins = Math.floor((s % 3600) / 60);
     const secs = s % 60;
-    return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+    return `${String(hrs).padStart(2, "0")}:${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
   }, []);
 
   const progress = totalSeconds > 0 ? (remaining / totalSeconds) * 100 : 0;
 
   return (
-    <div className="flex flex-col items-center gap-4">
-      <h2 className="text-lg font-semibold text-foreground self-start">Timer</h2>
+    <div className="flex flex-col gap-6 h-full justify-between">
+      <div className="flex items-center justify-between w-full">
+        <h2 className="text-xl font-bold text-foreground tracking-tight">Focus Timer</h2>
+        <TimerIcon size={20} className={cn(
+          "transition-colors duration-500",
+          running ? "text-primary animate-pulse" : "text-muted-foreground"
+        )} />
+      </div>
 
-      <div className="flex gap-2">
+      <div className="flex flex-col gap-4 flex-1 justify-center">
+        <div className="flex flex-col items-center">
+          <span className="font-mono text-5xl font-bold text-foreground tracking-tighter tabular-nums">
+            {format(remaining)}
+          </span>
+          {remaining === 0 && (
+            <p className="text-xs font-bold text-destructive mt-2 uppercase tracking-widest animate-bounce">
+              Time's up!
+            </p>
+          )}
+        </div>
+        
+        <div className="space-y-2 w-full px-2">
+          <Progress value={progress} className="h-2 w-full bg-secondary" />
+          <div className="flex justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">
+            <span>Remaining: {Math.round(progress)}%</span>
+            <span>{totalSeconds / 60}m Total</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2 justify-center mb-2">
         {presets.map((p) => (
           <button
             key={p.label}
             onClick={() => selectPreset(p.seconds)}
-            className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+            className={cn(
+              "rounded-lg px-3 py-1.5 text-xs font-bold transition-all border shadow-sm",
               totalSeconds === p.seconds
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground hover:text-foreground"
-            }`}
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-background text-muted-foreground hover:bg-muted border-border hover:border-primary/30"
+            )}
           >
             {p.label}
           </button>
         ))}
       </div>
 
-      <div className="relative w-36 h-36 flex items-center justify-center">
-        <svg className="absolute inset-0 -rotate-90" viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r="44" fill="none" strokeWidth="6" className="stroke-muted" />
-          <circle
-            cx="50"
-            cy="50"
-            r="44"
-            fill="none"
-            strokeWidth="6"
-            strokeLinecap="round"
-            className="stroke-primary transition-all duration-1000"
-            strokeDasharray={`${2 * Math.PI * 44}`}
-            strokeDashoffset={`${2 * Math.PI * 44 * (1 - progress / 100)}`}
-          />
-        </svg>
-        <span className="font-mono text-2xl font-medium text-foreground">
-          {format(remaining)}
-        </span>
-      </div>
-
-      {remaining === 0 && (
-        <p className="text-sm font-medium text-accent animate-fade-in">Time's up!</p>
-      )}
-
-      <div className="flex gap-3">
-        <button
+      <div className="flex gap-4 w-full">
+        <Button
           onClick={() => remaining > 0 && setRunning(!running)}
           disabled={remaining === 0}
-          className="rounded-lg bg-primary px-4 py-2 text-primary-foreground hover:opacity-90 transition-opacity flex items-center gap-2 text-sm font-medium disabled:opacity-50"
+          className="flex-1 rounded-xl h-12 text-sm font-bold shadow-sm transition-all hover:translate-y-[-1px] disabled:opacity-50"
         >
-          {running ? <Pause size={16} /> : <Play size={16} />}
-          {running ? "Pause" : "Start"}
-        </button>
-        <button
+          {running ? (
+            <>
+              <Pause size={18} className="mr-2" />
+              Pause
+            </>
+          ) : (
+            <>
+              <Play size={18} className="mr-2" />
+              Start
+            </>
+          )}
+        </Button>
+        <Button
           onClick={reset}
-          className="rounded-lg border border-border px-4 py-2 text-foreground hover:bg-muted transition-colors flex items-center gap-2 text-sm font-medium"
+          variant="outline"
+          className="rounded-xl h-12 w-12 p-0 shadow-sm transition-all hover:bg-muted"
+          aria-label="Reset timer"
         >
-          <RotateCcw size={16} />
-          Reset
-        </button>
+          <RotateCcw size={18} />
+        </Button>
       </div>
     </div>
   );
 };
 
 export default CountdownTimer;
+

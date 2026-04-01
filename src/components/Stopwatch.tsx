@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Play, Pause, RotateCcw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const Stopwatch = () => {
   const [ms, setMs] = useState(0);
@@ -30,29 +32,54 @@ const Stopwatch = () => {
   }, []);
 
   return (
-    <div className="flex flex-col items-center gap-4">
-      <h2 className="text-lg font-semibold text-foreground self-start">Stopwatch</h2>
-      <span className="font-mono text-4xl font-medium text-foreground tracking-wider">
-        {format(ms)}
-      </span>
-      <div className="flex gap-3">
-        <button
+    <div className="flex flex-col items-center gap-6 h-full justify-between">
+      <div className="flex items-center justify-between w-full">
+        <h2 className="text-xl font-bold text-foreground tracking-tight">Stopwatch</h2>
+        <div className={cn(
+          "w-3 h-3 rounded-full animate-pulse",
+          running ? "bg-primary" : "bg-muted"
+        )} />
+      </div>
+
+      <div className="flex flex-col items-center justify-center flex-1">
+        <span className="font-mono text-5xl font-bold text-primary tracking-tighter tabular-nums drop-shadow-sm">
+          {format(ms)}
+        </span>
+        <p className="text-xs font-medium text-muted-foreground mt-2 uppercase tracking-widest">
+          Minutes : Seconds . MS
+        </p>
+      </div>
+
+      <div className="flex gap-4 w-full">
+        <Button
           onClick={() => setRunning(!running)}
-          className="rounded-lg bg-primary px-4 py-2 text-primary-foreground hover:opacity-90 transition-opacity flex items-center gap-2 text-sm font-medium"
+          className="flex-1 rounded-xl h-12 text-sm font-bold shadow-sm transition-all hover:translate-y-[-1px]"
+          variant={running ? "secondary" : "default"}
         >
-          {running ? <Pause size={16} /> : <Play size={16} />}
-          {running ? "Pause" : "Start"}
-        </button>
-        <button
+          {running ? (
+            <>
+              <Pause size={18} className="mr-2" />
+              Pause
+            </>
+          ) : (
+            <>
+              <Play size={18} className="mr-2" />
+              Start
+            </>
+          )}
+        </Button>
+        <Button
           onClick={reset}
-          className="rounded-lg border border-border px-4 py-2 text-foreground hover:bg-muted transition-colors flex items-center gap-2 text-sm font-medium"
+          variant="outline"
+          className="rounded-xl h-12 w-12 p-0 shadow-sm transition-all hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20"
+          aria-label="Reset stopwatch"
         >
-          <RotateCcw size={16} />
-          Reset
-        </button>
+          <RotateCcw size={18} />
+        </Button>
       </div>
     </div>
   );
 };
 
 export default Stopwatch;
+

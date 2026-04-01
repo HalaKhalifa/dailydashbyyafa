@@ -1,10 +1,22 @@
-import { useState } from "react";
-import { Target, Sparkles } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Target, Sparkles, Pencil } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const DailyFocus = () => {
   const [focus, setFocus] = useState("");
-  const [saved, setSaved] = useState<string | null>(null);
-  const [editing, setEditing] = useState(false);
+  const [saved, setSaved] = useState<string | null>(() => {
+    return localStorage.getItem("daily-dash-focus");
+  });
+  const [editing, setEditing] = useState(!saved);
+
+  useEffect(() => {
+    if (saved) {
+      localStorage.setItem("daily-dash-focus", saved);
+    } else {
+      localStorage.removeItem("daily-dash-focus");
+    }
+  }, [saved]);
 
   const save = () => {
     const trimmed = focus.trim();
@@ -21,43 +33,65 @@ const DailyFocus = () => {
   });
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-2">
-        <Target size={20} className="text-accent" />
-        <h2 className="text-lg font-semibold text-foreground">Daily Focus</h2>
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-sm ring-1 ring-primary/20">
+            <Target size={22} />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-foreground tracking-tight">Main Focus</h2>
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{today}</p>
+          </div>
+        </div>
+        {saved && !editing && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setEditing(true)}
+            className="text-xs font-bold uppercase tracking-wider h-8 px-3 rounded-lg hover:bg-primary/10 hover:text-primary transition-all"
+          >
+            <Pencil size={14} className="mr-2" />
+            Edit
+          </Button>
+        )}
       </div>
-      <p className="text-sm text-muted-foreground">{today}</p>
 
       {saved && !editing ? (
-        <div className="animate-fade-in">
-          <div className="rounded-lg bg-card border border-border p-4 flex items-start gap-3">
-            <Sparkles size={18} className="text-accent mt-0.5 flex-shrink-0" />
-            <div className="flex-1">
-              <p className="text-foreground font-medium">{saved}</p>
-              <button
-                onClick={() => setEditing(true)}
-                className="text-xs text-muted-foreground hover:text-foreground mt-2 transition-colors"
-              >
-                Change focus
-              </button>
+        <div className="animate-in fade-in zoom-in duration-500">
+          <div className="rounded-2xl bg-primary/5 border border-primary/10 p-6 flex items-start gap-4 shadow-inner relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+              <Sparkles size={48} className="text-primary fill-primary" />
+            </div>
+            <Sparkles size={24} className="text-primary mt-1 flex-shrink-0" />
+            <div className="flex-1 relative z-10">
+              <p className="text-xl font-semibold text-foreground leading-snug">{saved}</p>
+              <p className="text-sm text-muted-foreground mt-2 font-medium">You've got this! Focus on the goal. ✨</p>
             </div>
           </div>
         </div>
       ) : (
-        <div className="flex flex-col gap-2 animate-fade-in">
-          <input
-            value={focus}
-            onChange={(e) => setFocus(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && save()}
-            placeholder="What's your main focus today?"
-            className="rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
-          />
-          <button
-            onClick={save}
-            className="self-start rounded-lg bg-accent px-4 py-2 text-accent-foreground text-sm font-medium hover:opacity-90 transition-opacity"
-          >
-            Set Focus
-          </button>
+        <div className="flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-2 duration-500">
+          <div className="relative">
+             <input
+              value={focus}
+              onChange={(e) => setFocus(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && save()}
+              placeholder="What's your main focus today?"
+              className="w-full rounded-2xl border border-border bg-background px-5 py-4 text-sm font-medium transition-all focus:ring-4 focus:ring-primary/10 hover:border-primary/30 outline-none pr-32 shadow-sm"
+              autoFocus
+            />
+            <Button
+              onClick={save}
+              className="absolute right-2 top-2 bottom-2 rounded-xl px-6 text-xs font-bold uppercase tracking-wider h-auto shadow-sm transition-all hover:translate-y-[-1px]"
+              size="sm"
+            >
+              Confirm
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground px-2 font-medium italic">
+            "Energy flows where attention goes."
+          </p>
         </div>
       )}
     </div>
@@ -65,3 +99,4 @@ const DailyFocus = () => {
 };
 
 export default DailyFocus;
+
