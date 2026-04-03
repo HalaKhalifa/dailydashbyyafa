@@ -10,23 +10,51 @@ export interface Task {
   createdAt: number;
 }
 
-export const useTasks = () => {
-  const [tasks, setTasks] = useState<Task[]>(() => {
-    const saved = localStorage.getItem("daily-dash-tasks");
+// Key for storage: daily-dash-v2-tasks
+// Map of date string (YYYY-MM-DD) to Task array
+type TaskMap = Record<string, Task[]>;
+
+export const useTasks = (dateContext?: string) => {
+  const today = new Date().toISOString().split("T")[0];
+  const activeDate = dateContext || today;
+
+  const [taskMap, setTaskMap] = useState<TaskMap>(() => {
+    const saved = localStorage.getItem("daily-dash-v2-tasks");
     if (saved) {
       try {
         return JSON.parse(saved);
       } catch (e) {
-        console.error("Failed to parse tasks", e);
-        return [];
+        console.error("Failed to parse task map", e);
       }
     }
-    return [];
+
+    // Migration logic for old "daily-dash-tasks"
+    const oldSaved = localStorage.getItem("daily-dash-tasks");
+    if (oldSaved) {
+      try {
+        const oldTasks = JSON.parse(oldSaved);
+        // Move old tasks to today's date
+        return { [today]: oldTasks };
+      } catch (e) {
+        console.error("Failed to migrate old tasks", e);
+      }
+    }
+
+    return {};
   });
 
   useEffect(() => {
-    localStorage.setItem("daily-dash-tasks", JSON.stringify(tasks));
-  }, [tasks]);
+    localStorage.setItem("daily-dash-v2-tasks", JSON.stringify(taskMap));
+  }, [taskMap]);
+
+  const tasks = taskMap[activeDate] || [];
+
+  const setTasksForDate = (newTasks: Task[]) => {
+    setTaskMap((prev) => ({
+      ...prev,
+      [activeDate]: newTasks,
+    }));
+  };
 
   const addTask = (text: string, priority: Priority = "medium") => {
     const newTask: Task = {
@@ -36,29 +64,39 @@ export const useTasks = () => {
       priority,
       createdAt: Date.now(),
     };
-    setTasks((prev) => [newTask, ...prev]);
+    setTasksForDate([newTask, ...tasks]);
   };
 
-  const toggleTask = (id: string) => {
-    setTasks((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t))
-    );
+  const toggleTask = (id: string): boolean => {
+    let wasJustCompleted = false;
+    setTaskMap((prev) => {
+      const currentTasks = prev[activeDate] || [];
+      const updatedTasks = currentTasks.map((t) => {
+        if (t.id === id) {
+          if (!t.done) wasJustCompleted = true;
+          return { ...t, done: !t.done };
+        }
+        return t;
+      });
+      return { ...prev, [activeDate]: updatedTasks };
+    });
+    return wasJustCompleted;
   };
 
   const deleteTask = (id: string) => {
-    setTasks((prev) => prev.filter((t) => t.id !== id));
+    setTasksForDate(tasks.filter((t) => t.id !== id));
   };
 
   const updateTask = (id: string, text: string) => {
-    setTasks((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, text } : t))
-    );
+    setTasksForDate(tasks.map((t) => (t.id === id ? { ...t, text } : t)));
   };
 
   const updatePriority = (id: string, priority: Priority) => {
-    setTasks((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, priority } : t))
-    );
+    setTasksForDate(tasks.map((t) => (t.id === id ? { ...t, priority } : t)));
+  };
+
+  const reorderTasks = (newOrder: Task[]) => {
+    setTasksForDate(newOrder);
   };
 
   return {
@@ -68,5 +106,7 @@ export const useTasks = () => {
     deleteTask,
     updateTask,
     updatePriority,
+    reorderTasks,
+    activeDate,
   };
 };

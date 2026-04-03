@@ -3,20 +3,35 @@ import { Target, Sparkles, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-const DailyFocus = () => {
+interface DailyFocusProps {
+  dateContext?: string;
+}
+
+const DailyFocus = ({ dateContext }: DailyFocusProps) => {
+  const todayKey = new Date().toISOString().split("T")[0];
+  const activeDate = dateContext || todayKey;
+  const storageKey = `daily-dash-focus-${activeDate}`;
+
   const [focus, setFocus] = useState("");
   const [saved, setSaved] = useState<string | null>(() => {
-    return localStorage.getItem("daily-dash-focus");
+    return localStorage.getItem(storageKey);
   });
   const [editing, setEditing] = useState(!saved);
 
   useEffect(() => {
+    const freshSaved = localStorage.getItem(storageKey);
+    setSaved(freshSaved);
+    setFocus(freshSaved || "");
+    setEditing(!freshSaved);
+  }, [activeDate, storageKey]);
+
+  useEffect(() => {
     if (saved) {
-      localStorage.setItem("daily-dash-focus", saved);
+      localStorage.setItem(storageKey, saved);
     } else {
-      localStorage.removeItem("daily-dash-focus");
+      localStorage.removeItem(storageKey);
     }
-  }, [saved]);
+  }, [saved, storageKey]);
 
   const save = () => {
     const trimmed = focus.trim();
@@ -26,7 +41,7 @@ const DailyFocus = () => {
     }
   };
 
-  const today = new Date().toLocaleDateString("en-US", {
+  const displayDate = new Date(activeDate).toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
     day: "numeric",
@@ -41,7 +56,7 @@ const DailyFocus = () => {
           </div>
           <div>
             <h2 className="text-xl font-bold text-foreground tracking-tight">Main Focus</h2>
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{today}</p>
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{displayDate}</p>
           </div>
         </div>
         {saved && !editing && (

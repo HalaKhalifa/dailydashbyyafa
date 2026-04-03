@@ -1,11 +1,27 @@
 import { useState, useRef } from "react";
-import { Check, Plus, Pencil, Trash2, X, ChevronDown } from "lucide-react";
-import { useTasks, Priority } from "@/hooks/useTasks";
+import { Check, Plus, Pencil, Trash2, X, GripVertical } from "lucide-react";
+import { useTasks, Priority, Task } from "@/hooks/useTasks";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Reorder, AnimatePresence } from "framer-motion";
+import confetti from "canvas-confetti";
 
-const TodoList = () => {
-  const { tasks, addTask, toggleTask, deleteTask, updateTask, updatePriority } = useTasks();
+interface TodoListProps {
+  dateContext?: string;
+}
+
+const TodoList = ({ dateContext }: TodoListProps) => {
+  const { 
+    tasks, 
+    addTask, 
+    toggleTask, 
+    deleteTask, 
+    updateTask, 
+    updatePriority, 
+    reorderTasks,
+    activeDate 
+  } = useTasks(dateContext);
+  
   const [input, setInput] = useState("");
   const [priority, setPriority] = useState<Priority>("medium");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -18,6 +34,18 @@ const TodoList = () => {
     addTask(trimmed, priority);
     setInput("");
     inputRef.current?.focus();
+  };
+
+  const handleToggle = (id: string) => {
+    const wasJustCompleted = toggleTask(id);
+    if (wasJustCompleted) {
+      confetti({
+        particleCount: 150,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ["#22c55e", "#3b82f6", "#ef4444", "#eab308"]
+      });
+    }
   };
 
   const startEdit = (id: string, text: string) => {
@@ -42,10 +70,20 @@ const TodoList = () => {
     }
   };
 
+  const cyclePriority = (id: string, current: Priority) => {
+    const priorities: Priority[] = ["low", "medium", "high"];
+    const next = priorities[(priorities.indexOf(current) + 1) % priorities.length];
+    updatePriority(id, next);
+  };
+
+  const displayTitle = dateContext === new Date().toISOString().split("T")[0] || !dateContext 
+    ? "Today's Tasks" 
+    : `Tasks for ${new Date(activeDate).toLocaleDateString("en-US", { month: 'short', day: 'numeric' })}`;
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-foreground tracking-tight">Today's Tasks</h2>
+        <h2 className="text-xl font-bold text-foreground tracking-tight">{displayTitle}</h2>
         <span className="text-xs font-medium bg-secondary px-2 py-1 rounded-full text-secondary-foreground">
           {tasks.filter(t => !t.done).length} active
         </span>
@@ -58,14 +96,14 @@ const TodoList = () => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-            placeholder="What needs to be done?"
-            className="flex-1 rounded-xl border border-border bg-background px-4 py-2.5 text-sm transition-all focus:ring-2 focus:ring-primary/20 outline-none"
+            placeholder="Add a task..."
+            className="flex-1 rounded-xl border border-border bg-background px-4 py-2.5 text-sm transition-all focus:ring-2 focus:ring-primary/20 outline-none shadow-sm"
           />
           
           <select
             value={priority}
             onChange={(e) => setPriority(e.target.value as Priority)}
-            className="rounded-xl border border-border bg-background px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-primary/20 outline-none cursor-pointer"
+            className="rounded-xl border border-border bg-background px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-primary/20 outline-none cursor-pointer shadow-sm"
           >
             <option value="low">Low</option>
             <option value="medium">Medium</option>
@@ -82,85 +120,90 @@ const TodoList = () => {
         </div>
       </div>
 
-      <ul className="flex flex-col gap-2.5 max-h-[400px] overflow-y-auto pr-1 scrollbar-thin">
+      <div className="max-h-[450px] overflow-y-auto pr-1 scrollbar-thin">
         {tasks.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center animate-in fade-in zoom-in duration-500">
             <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
               <Check className="text-muted-foreground opacity-20" size={32} />
             </div>
-            <p className="text-sm font-medium text-foreground">No tasks yet — add one!</p>
-            <p className="text-xs text-muted-foreground mt-1">Break your day into manageable bites.</p>
+            <p className="text-sm font-medium text-foreground">No tasks for this day</p>
+            <p className="text-xs text-muted-foreground mt-1">Consistency is the key to success. 🚀</p>
           </div>
         ) : (
-          tasks.map((task) => (
-            <li
-              key={task.id}
-              className={cn(
-                "group flex items-center gap-3 rounded-xl border border-border bg-card p-3 shadow-sm transition-all duration-300 animate-in fade-in slide-in-from-left-4",
-                task.done ? "opacity-60 grayscale-[0.2]" : "hover:border-primary/30 hover:shadow-md hover:translate-x-1"
-              )}
-            >
-              <button
-                onClick={() => toggleTask(task.id)}
-                className={cn(
-                  "flex-shrink-0 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-500",
-                  task.done
-                    ? "bg-primary border-primary scale-90"
-                    : "border-border hover:border-primary/50"
-                )}
-              >
-                {task.done && <Check size={14} className="text-primary-foreground animate-in zoom-in duration-300" />}
-              </button>
-
-              {editingId === task.id ? (
-                <div className="flex flex-1 gap-2">
-                  <input
-                    value={editText}
-                    onChange={(e) => setEditText(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") saveEdit(task.id);
-                      if (e.key === "Escape") setEditingId(null);
-                    }}
-                    autoFocus
-                    className="flex-1 bg-transparent text-sm focus:outline-none"
-                  />
-                  <div className="flex gap-1">
-                    <button onClick={() => saveEdit(task.id)} className="p-1 text-primary hover:bg-primary/10 rounded-md">
-                      <Check size={16} />
-                    </button>
-                    <button onClick={() => setEditingId(null)} className="p-1 text-muted-foreground hover:bg-muted rounded-md">
-                      <X size={16} />
-                    </button>
+          <Reorder.Group axis="y" values={tasks} onReorder={reorderTasks} className="flex flex-col gap-2.5">
+            <AnimatePresence initial={false}>
+              {tasks.map((task) => (
+                <Reorder.Item
+                  key={task.id}
+                  value={task}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className={cn(
+                    "group flex items-center gap-3 rounded-xl border border-border bg-card p-3 shadow-sm transition-all duration-300",
+                    task.done ? "opacity-60 grayscale-[0.2]" : "hover:border-primary/30 hover:shadow-md"
+                  )}
+                >
+                  <div className="cursor-grab active:cursor-grabbing text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity pr-1">
+                    <GripVertical size={16} />
                   </div>
-                </div>
-              ) : (
-                <>
-                  <div className="flex flex-col flex-1 min-w-0">
-                    <span
-                      className={cn(
-                        "text-sm font-medium transition-all duration-500 truncate",
-                        task.done && "line-through text-muted-foreground"
-                      )}
-                    >
-                      {task.text}
-                    </span>
-                    <div className="flex items-center gap-2 mt-1">
-                       <span className={cn(
-                        "text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md border",
-                        getPriorityColor(task.priority)
-                      )}>
-                        {task.priority}
-                      </span>
-                    </div>
+
+                  <button
+                    onClick={() => handleToggle(task.id)}
+                    className={cn(
+                      "flex-shrink-0 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-500",
+                      task.done
+                        ? "bg-primary border-primary scale-90"
+                        : "border-border hover:border-primary/50"
+                    )}
+                  >
+                    {task.done && <Check size={14} className="text-primary-foreground animate-in zoom-in duration-300" />}
+                  </button>
+
+                  <div className="flex-1 flex flex-col min-w-0">
+                    {editingId === task.id ? (
+                      <div className="flex gap-2">
+                        <input
+                          value={editText}
+                          onChange={(e) => setEditText(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") saveEdit(task.id);
+                            if (e.key === "Escape") setEditingId(null);
+                          }}
+                          autoFocus
+                          className="flex-1 bg-transparent text-sm focus:outline-none border-b border-primary"
+                        />
+                        <button onClick={() => saveEdit(task.id)} className="p-1 text-primary hover:bg-primary/10 rounded-md">
+                          <Check size={16} />
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <span
+                          onClick={() => startEdit(task.id, task.text)}
+                          className={cn(
+                            "text-sm font-medium transition-all duration-500 truncate cursor-text",
+                            task.done && "line-through text-muted-foreground"
+                          )}
+                        >
+                          {task.text}
+                        </span>
+                        <div className="flex items-center gap-2 mt-1">
+                           <button 
+                            onClick={() => cyclePriority(task.id, task.priority)}
+                            className={cn(
+                              "text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md border transition-colors",
+                              getPriorityColor(task.priority)
+                            )}
+                          >
+                            {task.priority}
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
                   
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => startEdit(task.id, task.text)}
-                      className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all"
-                    >
-                      <Pencil size={15} />
-                    </button>
                     <button
                       onClick={() => deleteTask(task.id)}
                       className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all"
@@ -168,12 +211,12 @@ const TodoList = () => {
                       <Trash2 size={15} />
                     </button>
                   </div>
-                </>
-              )}
-            </li>
-          ))
+                </Reorder.Item>
+              ))}
+            </AnimatePresence>
+          </Reorder.Group>
         )}
-      </ul>
+      </div>
     </div>
   );
 };

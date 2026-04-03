@@ -16,6 +16,11 @@ const CountdownTimer = () => {
   const [remaining, setRemaining] = useState(1500);
   const [running, setRunning] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    audioRef.current = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
+  }, []);
 
   useEffect(() => {
     if (running && remaining > 0) {
@@ -23,6 +28,7 @@ const CountdownTimer = () => {
         setRemaining((p) => {
           if (p <= 1) {
             setRunning(false);
+            audioRef.current?.play().catch(e => console.error("Audio play failed", e));
             return 0;
           }
           return p - 1;

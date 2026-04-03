@@ -3,10 +3,12 @@ import Stopwatch from "@/components/Stopwatch";
 import CountdownTimer from "@/components/CountdownTimer";
 import DailyFocus from "@/components/DailyFocus";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import Navbar from "@/components/Navbar";
 
 const Index = () => {
   return (
     <div className="min-h-screen bg-background transition-colors duration-500">
+      <Navbar />
       <div className="mx-auto max-w-5xl px-6 py-12 lg:px-8">
         <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6 animate-in fade-in slide-in-from-top-4 duration-700">
           <div>
@@ -22,23 +24,23 @@ const Index = () => {
 
         <div className="grid gap-6 md:grid-cols-2">
           {/* Daily Focus - full width */}
-          <div className="md:col-span-2 rounded-xl border border-border bg-card p-6">
+          <div className="md:col-span-2 rounded-xl border border-border bg-card p-6 shadow-sm">
             <DailyFocus />
           </div>
 
           {/* Todo List */}
-          <div className="rounded-xl border border-border bg-card p-6 md:row-span-2">
+          <div className="rounded-xl border border-border bg-card p-6 md:row-span-2 shadow-sm">
             <TodoList />
           </div>
 
-          {/* Stopwatch */}
-          <div className="rounded-xl border border-border bg-card p-6">
-            <Stopwatch />
+          {/* Countdown Timer (Now on top) */}
+          <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+            <CountdownTimer />
           </div>
 
-          {/* Countdown Timer */}
-          <div className="rounded-xl border border-border bg-card p-6">
-            <CountdownTimer />
+          {/* Stopwatch (Now on bottom) */}
+          <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+            <Stopwatch />
           </div>
         </div>
       </div>
