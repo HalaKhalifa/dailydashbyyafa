@@ -3,6 +3,8 @@ import { Play, Pause, RotateCcw, Timer as TimerIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { useTimer } from "@/context/TimerContext";
+import { useToast } from "@/components/ui/use-toast";
 
 const presets = [
   { label: "5m", seconds: 300 },
@@ -12,46 +14,28 @@ const presets = [
 ];
 
 const CountdownTimer = () => {
-  const [totalSeconds, setTotalSeconds] = useState(1500);
-  const [remaining, setRemaining] = useState(1500);
-  const [running, setRunning] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const { 
+    remaining, 
+    totalSeconds, 
+    timerRunning, 
+    startTimer, 
+    pauseTimer, 
+    resetTimer, 
+    setTimerSeconds 
+  } = useTimer();
+  const { toast } = useToast();
+  const lastRemaining = useRef(remaining);
 
+  // Show toast only when transition to zero happens
   useEffect(() => {
-    audioRef.current = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
-  }, []);
-
-  useEffect(() => {
-    if (running && remaining > 0) {
-      intervalRef.current = setInterval(() => {
-        setRemaining((p) => {
-          if (p <= 1) {
-            setRunning(false);
-            audioRef.current?.play().catch(e => console.error("Audio play failed", e));
-            return 0;
-          }
-          return p - 1;
-        });
-      }, 1000);
-    } else if (intervalRef.current) {
-      clearInterval(intervalRef.current);
+    if (lastRemaining.current > 0 && remaining === 0) {
+      toast({
+        title: "Time's up!",
+        description: "Great job staying focused. Take a break! 🌿",
+      });
     }
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [running, remaining]);
-
-  const reset = () => {
-    setRunning(false);
-    setRemaining(totalSeconds);
-  };
-
-  const selectPreset = (seconds: number) => {
-    setRunning(false);
-    setTotalSeconds(seconds);
-    setRemaining(seconds);
-  };
+    lastRemaining.current = remaining;
+  }, [remaining, toast]);
 
   const format = useCallback((s: number) => {
     const hrs = Math.floor(s / 3600);
@@ -68,7 +52,7 @@ const CountdownTimer = () => {
         <h2 className="text-xl font-bold text-foreground tracking-tight">Focus Timer</h2>
         <TimerIcon size={20} className={cn(
           "transition-colors duration-500",
-          running ? "text-primary animate-pulse" : "text-muted-foreground"
+          timerRunning ? "text-primary animate-pulse" : "text-muted-foreground"
         )} />
       </div>
 
@@ -97,7 +81,7 @@ const CountdownTimer = () => {
         {presets.map((p) => (
           <button
             key={p.label}
-            onClick={() => selectPreset(p.seconds)}
+            onClick={() => setTimerSeconds(p.seconds)}
             className={cn(
               "rounded-lg px-3 py-1.5 text-xs font-bold transition-all border shadow-sm",
               totalSeconds === p.seconds
@@ -112,11 +96,11 @@ const CountdownTimer = () => {
 
       <div className="flex gap-4 w-full">
         <Button
-          onClick={() => remaining > 0 && setRunning(!running)}
+          onClick={() => timerRunning ? pauseTimer() : startTimer()}
           disabled={remaining === 0}
           className="flex-1 rounded-xl h-12 text-sm font-bold shadow-sm transition-all hover:translate-y-[-1px] disabled:opacity-50"
         >
-          {running ? (
+          {timerRunning ? (
             <>
               <Pause size={18} className="mr-2" />
               Pause
@@ -129,7 +113,7 @@ const CountdownTimer = () => {
           )}
         </Button>
         <Button
-          onClick={reset}
+          onClick={resetTimer}
           variant="outline"
           className="rounded-xl h-12 w-12 p-0 shadow-sm transition-all hover:bg-muted"
           aria-label="Reset timer"

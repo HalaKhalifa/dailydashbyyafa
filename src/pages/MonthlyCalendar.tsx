@@ -6,17 +6,36 @@ import { useTasks } from "@/hooks/useTasks";
 import TodoList from "@/components/TodoList";
 import DailyFocus from "@/components/DailyFocus";
 import { cn } from "@/lib/utils";
-import { Calendar as CalendarIcon, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 const MonthlyCalendar = () => {
+  const { taskMap } = useTasks();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const dateKey = format(selectedDate, "yyyy-MM-dd");
+
+  // Find all dates that have tasks
+  const daysWithTasks = Object.keys(taskMap).filter(key => taskMap[key].length > 0)
+    .map(dateStr => new Date(dateStr));
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="mx-auto max-w-5xl px-6 py-12 lg:px-8">
+        <style>{`
+          .has-tasks {
+            position: relative;
+          }
+          .has-tasks::after {
+            content: '';
+            position: absolute;
+            bottom: 4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 4px;
+            background-color: #ef4444; /* red-500 */
+            border-radius: 50%;
+          }
+        `}</style>
         <header className="mb-12">
           <h1 className="text-3xl font-bold text-foreground sm:text-4xl">Monthly Calendar</h1>
           <p className="text-muted-foreground mt-2">Plan ahead and track your consistency 📅</p>
@@ -28,6 +47,8 @@ const MonthlyCalendar = () => {
               mode="single"
               selected={selectedDate}
               onSelect={(date) => date && setSelectedDate(date)}
+              modifiers={{ hasTasks: daysWithTasks }}
+              modifiersClassNames={{ hasTasks: "has-tasks" }}
               className="mx-auto"
               classNames={{
                 day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",

@@ -9,24 +9,28 @@ import WeeklyPlanner from "./pages/WeeklyPlanner.tsx";
 import MonthlyCalendar from "./pages/MonthlyCalendar.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
+import { TimerProvider } from "./context/TimerContext.tsx";
+
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <HashRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/weekly" element={<WeeklyPlanner />} />
-            <Route path="/monthly" element={<MonthlyCalendar />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </HashRouter>
-      </TooltipProvider>
+      <TimerProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <HashRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/weekly" element={<WeeklyPlanner />} />
+              <Route path="/monthly" element={<MonthlyCalendar />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </HashRouter>
+        </TooltipProvider>
+      </TimerProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );

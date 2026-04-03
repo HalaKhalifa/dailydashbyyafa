@@ -101,6 +101,7 @@ export const useTasks = (dateContext?: string) => {
 
   return {
     tasks,
+    taskMap,
     addTask,
     toggleTask,
     deleteTask,

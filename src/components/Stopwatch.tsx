@@ -1,28 +1,17 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useCallback } from "react";
 import { Play, Pause, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useTimer } from "@/context/TimerContext";
 
 const Stopwatch = () => {
-  const [ms, setMs] = useState(0);
-  const [running, setRunning] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    if (running) {
-      intervalRef.current = setInterval(() => setMs((p) => p + 10), 10);
-    } else if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-    }
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [running]);
-
-  const reset = () => {
-    setRunning(false);
-    setMs(0);
-  };
+  const { 
+    stopwatchSeconds, // This is actually MS from context
+    stopwatchRunning, 
+    startStopwatch, 
+    pauseStopwatch, 
+    resetStopwatch 
+  } = useTimer();
 
   const format = useCallback((t: number) => {
     const mins = Math.floor(t / 60000);
@@ -37,13 +26,13 @@ const Stopwatch = () => {
         <h2 className="text-xl font-bold text-foreground tracking-tight">Stopwatch</h2>
         <div className={cn(
           "w-3 h-3 rounded-full animate-pulse",
-          running ? "bg-primary" : "bg-muted"
+          stopwatchRunning ? "bg-primary" : "bg-muted"
         )} />
       </div>
 
       <div className="flex flex-col items-center justify-center flex-1">
         <span className="font-mono text-5xl font-bold text-primary tracking-tighter tabular-nums drop-shadow-sm">
-          {format(ms)}
+          {format(stopwatchSeconds)}
         </span>
         <p className="text-xs font-medium text-muted-foreground mt-2 uppercase tracking-widest">
           Minutes : Seconds . MS
@@ -52,11 +41,11 @@ const Stopwatch = () => {
 
       <div className="flex gap-4 w-full">
         <Button
-          onClick={() => setRunning(!running)}
+          onClick={() => stopwatchRunning ? pauseStopwatch() : startStopwatch()}
           className="flex-1 rounded-xl h-12 text-sm font-bold shadow-sm transition-all hover:translate-y-[-1px]"
-          variant={running ? "secondary" : "default"}
+          variant={stopwatchRunning ? "secondary" : "default"}
         >
-          {running ? (
+          {stopwatchRunning ? (
             <>
               <Pause size={18} className="mr-2" />
               Pause
@@ -69,7 +58,7 @@ const Stopwatch = () => {
           )}
         </Button>
         <Button
-          onClick={reset}
+          onClick={resetStopwatch}
           variant="outline"
           className="rounded-xl h-12 w-12 p-0 shadow-sm transition-all hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20"
           aria-label="Reset stopwatch"

@@ -37,8 +37,12 @@ const TodoList = ({ dateContext }: TodoListProps) => {
   };
 
   const handleToggle = (id: string) => {
-    const wasJustCompleted = toggleTask(id);
-    if (wasJustCompleted) {
+    const task = tasks.find(t => t.id === id);
+    const wasJustDone = task && !task.done;
+    
+    toggleTask(id);
+    
+    if (wasJustDone) {
       confetti({
         particleCount: 150,
         spread: 70,
